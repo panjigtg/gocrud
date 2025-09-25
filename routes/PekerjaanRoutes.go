@@ -24,7 +24,7 @@ func NewPekerjaanHandler(service *services.PekerjaanService) *PekerjaanHandler {
 func (h *PekerjaanHandler) SetupRoutes(app *fiber.App) {
    pekerjaan := app.Group("/alumni-management/pekerjaan")
 
-    pekerjaan.Get("/", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.GetPekerjaanByFilter)
+    pekerjaan.Get("/filter", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.GetPekerjaanByFilter)
 	pekerjaan.Get("/", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.GetAllPekerjaan)
 	pekerjaan.Get("/:id", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.GetPekerjaanByID)
 	pekerjaan.Get("/alumni/:alumni_id", middleware.AuthRequired(), middleware.RoleOnly("admin"), h.GetPekerjaanByAlumniID)

@@ -259,7 +259,12 @@ func (r *PekerjaanRepository) GetByFilter(search string, sortCol, order string, 
             EXTRACT(YEAR FROM p.tanggal_selesai_kerja) AS tahun_selesai
         FROM pekerjaan_alumni p
         LEFT JOIN alumni a ON p.alumni_id = a.id
-        WHERE p.nama_perusahaan ILIKE $1 
+        WHERE 
+        p.nama_perusahaan ILIKE $1 OR
+        p.posisi_jabatan ILIKE $1 OR
+        p.bidang_industri ILIKE $1 OR
+        p.lokasi_kerja ILIKE $1 OR
+        p.status_pekerjaan ILIKE $1
         ORDER BY %s %s
         LIMIT $2 OFFSET $3
     `, sortCol, ord)
@@ -322,11 +327,12 @@ func (r *PekerjaanRepository) CountPekerjaanRepo(search string) (int, error) {
     query := `
         SELECT COUNT(*)
         FROM pekerjaan_alumni p
-        WHERE p.nama_perusahaan ILIKE $1
-        OR p.posisi_jabatan ILIKE $1
-        OR p.bidang_industri ILIKE $1
-        OR p.lokasi_kerja ILIKE $1
-        OR p.status_pekerjaan ILIKE $1
+        WHERE 
+        p.nama_perusahaan ILIKE $1 OR
+        p.posisi_jabatan ILIKE $1 OR
+        p.bidang_industri ILIKE $1 OR
+        p.lokasi_kerja ILIKE $1 OR
+        p.status_pekerjaan ILIKE $1
     `
     err := r.db.QueryRow(query, "%"+search+"%").Scan(&total)
 	if err != nil && err != sql.ErrNoRows {
