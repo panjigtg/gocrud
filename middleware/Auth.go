@@ -1,0 +1,97 @@
+package middleware
+
+import(
+	"crudprojectgo/utils"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+func AuthRequired() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Authorization header is missing",
+			})
+		}
+
+		tokenParts := strings.Split(authHeader, " ")
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid Authorization header format",
+			})
+		}
+
+		claims, err := utils.ValidateToken(tokenParts[1])
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Token tidak valid atau expired",
+			})
+		}
+
+		// Simpan informasi user di context
+		c.Locals("user_id", claims.UserID)
+		c.Locals("username", claims.Username)
+		c.Locals("role", claims.Role)
+
+		return c.Next()
+	}
+}
+		
+// Middleware untuk memerlukan role admin
+func AdminOnly() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role, ok := c.Locals("role").(string)
+		if !ok || role != "admin" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "Akses ditolak. Hanya admin yang diizinkan",
+			})
+		}
+		return c.Next()
+	}
+}
+
+
+func RoleOnly(allowedRoles ...string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role, ok := c.Locals("role").(string)
+		if !ok {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "Role tidak ditemukan dalam token",
+			})
+		}
+
+		for _, r := range allowedRoles {
+			if role == r {
+				return c.Next()
+			}
+		}
+
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Akses ditolak. Role tidak diizinkan",
+		})
+	}
+}
+
+func JWTProtected() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Harap Login terlebih dahulu",
+			})
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		claims, err := utils.ValidateToken(tokenString)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid or expired token"})
+		}
+
+		// Simpan claims ke context biar bisa dipakai nanti
+		c.Locals("user", claims)
+		c.Locals("userToken", tokenString) // untuk logout jika ingin diblacklist
+		return c.Next()
+	}
+}
