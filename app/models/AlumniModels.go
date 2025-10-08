@@ -14,6 +14,7 @@ type Alumni struct {
     Alamat      *string   `json:"alamat"`
     CreatedAt   time.Time `json:"created_at"`
     UpdatedAt   time.Time `json:"updated_at"`
+    UserID      int       `json:"user_id"`
 }
 
 type CreateAlumniRequest struct {

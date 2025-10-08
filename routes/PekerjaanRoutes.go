@@ -24,13 +24,17 @@ func NewPekerjaanHandler(service *services.PekerjaanService) *PekerjaanHandler {
 func (h *PekerjaanHandler) SetupRoutes(app *fiber.App) {
    pekerjaan := app.Group("/alumni-management/pekerjaan")
 
+    pekerjaan.Get("/trash", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.GetTrash)
     pekerjaan.Get("/filter", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.GetPekerjaanByFilter)
 	pekerjaan.Get("/", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.GetAllPekerjaan)
 	pekerjaan.Get("/:id", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.GetPekerjaanByID)
 	pekerjaan.Get("/alumni/:alumni_id", middleware.AuthRequired(), middleware.RoleOnly("admin"), h.GetPekerjaanByAlumniID)
 
 	pekerjaan.Post("/", middleware.AuthRequired(), middleware.AdminOnly(), h.CreatePekerjaan)
+    pekerjaan.Put("/restore/:id", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.RestorePekerjaan)
 	pekerjaan.Put("/:id", middleware.AuthRequired(), middleware.AdminOnly(), h.UpdatePekerjaan)
+    pekerjaan.Put("/softdel/:id", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.SoftDeletePekerjaan)
+    pekerjaan.Delete("/harddel/:id", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), h.HardDeletePekerjaan)
 	pekerjaan.Delete("/:id", middleware.AuthRequired(), middleware.AdminOnly(), h.DeletePekerjaan)
 }
 
@@ -58,18 +62,31 @@ func (h *PekerjaanHandler) GetPekerjaanByID(c *fiber.Ctx) error {
 }
 
 func (h *PekerjaanHandler) GetPekerjaanByAlumniID(c *fiber.Ctx) error {
-    alumniID, err := strconv.Atoi(c.Params("alumni_id"))
-    if err != nil {
-        return helper.ErrorResponse(c, 400, "Alumni ID tidak valid")
-    }
-    
-    pekerjaan, err := h.service.GetPekerjaanByAlumniID(alumniID)
-    if err != nil {
-        return helper.ErrorResponse(c, 404, err.Error())
-    }
-    
-    return helper.SuccessResponse(c, "Data pekerjaan alumni berhasil diambil", pekerjaan)
+	alumniID, err := strconv.Atoi(c.Params("alumni_id"))
+	if err != nil {
+		return helper.ErrorResponse(c, 400, "Alumni ID tidak valid")
+	}
+
+	pekerjaan, err := h.service.GetPekerjaanByAlumniID(alumniID)
+	if err != nil {
+		if err.Error() == "alumni tidak ditemukan" {
+			return helper.ErrorResponse(c, 404, err.Error())
+		}
+		return helper.ErrorResponse(c, 500, "Terjadi kesalahan saat mengambil data pekerjaan")
+	}
+
+	// Balas tetap 200 meskipun data kosong
+	if len(pekerjaan) == 0 {
+		return c.Status(200).JSON(fiber.Map{
+			"success": true,
+			"message": "Data pekerjaan alumni tidak ditemukan",
+			"data":    []models.PekerjaanAlumni{},
+		})
+	}
+
+	return helper.SuccessResponse(c, "Data pekerjaan alumni berhasil diambil", pekerjaan)
 }
+
 
 func (h *PekerjaanHandler) CreatePekerjaan(c *fiber.Ctx) error {
     var req models.CreatePekerjaanRequest
@@ -133,4 +150,83 @@ func (h *PekerjaanHandler) GetPekerjaanByFilter(c *fiber.Ctx) error {
         return helper.ErrorResponse(c, 500, "Gagal mengambil data pekerjaan")
     }
     return helper.SuccessResponse(c, "Data pekerjaan berhasil diambil", result)
+}
+
+func (h *PekerjaanHandler) SoftDeletePekerjaan(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	pekerjaanID, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "ID tidak valid"})
+	}
+
+	requesterID := c.Locals("user_id").(int)
+	requesterRole := c.Locals("role").(string)
+
+	err = h.service.SoftDeletePekerjaan(pekerjaanID, requesterID, requesterRole)
+	if err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Pekerjaan berhasil dihapus (soft delete)"})
+}
+
+func (h *PekerjaanHandler) GetTrash(c *fiber.Ctx) error {
+	
+	requesterID := c.Locals("user_id").(int)
+	requesterRole := c.Locals("role").(string)
+
+	data, err := h.service.GetTrash(requesterRole, requesterID)
+	if err != nil {
+		return helper.ErrorResponse(c, 500, "Gagal mengambil data trash")
+	}
+
+	if len(data) == 0 {
+		return c.Status(200).JSON(fiber.Map{
+			"success": true,
+			"message": "Tidak ada data di trash",
+			"data":    []models.PekerjaanAlumni{},
+		})
+	}
+
+	return helper.SuccessResponse(c, "Data trash berhasil diambil", data)
+}
+
+func (h *PekerjaanHandler) RestorePekerjaan(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	pekerjaanID, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "ID tidak valid",
+		})
+	}
+
+	requesterID := c.Locals("user_id").(int)
+	requesterRole := c.Locals("role").(string)
+
+	err = h.service.RestorePekerjaan(pekerjaanID, requesterID, requesterRole)
+	if err != nil {
+		return helper.ErrorResponse(c, 403, err.Error())
+	}
+
+	return helper.SuccessResponse(c, "Pekerjaan berhasil direstore", nil)
+}
+
+func (h *PekerjaanHandler) HardDeletePekerjaan(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	pekerjaanID, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "ID tidak valid",
+		})
+	}
+
+	requesterID := c.Locals("user_id").(int)
+	requesterRole := c.Locals("role").(string)
+
+	err = h.service.HardDeletePekerjaan(pekerjaanID, requesterID, requesterRole)
+	if err != nil {
+		return helper.ErrorResponse(c, 403, err.Error())
+	}
+
+	return helper.SuccessResponse(c, "Data pekerjaan berhasil dihapus permanen", nil)
 }

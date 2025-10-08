@@ -1,9 +1,12 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type PekerjaanAlumni struct {
-    ID                   int        `json:"id"`
+    ID                  int        `json:"id"`
     AlumniID            int        `json:"alumni_id"`
     NamaPerusahaan      string     `json:"nama_perusahaan"`
     PosisiJabatan       string     `json:"posisi_jabatan"`
@@ -16,9 +19,8 @@ type PekerjaanAlumni struct {
     DeskripsiPekerjaan  *string    `json:"deskripsi_pekerjaan"`
     CreatedAt           time.Time  `json:"created_at"`
     UpdatedAt           time.Time  `json:"updated_at"`
-    
-    // Untuk join dengan alumni
     AlumniNama *string `json:"alumni_nama,omitempty"`
+    UserID     *int    `json:"user_id,omitempty"` 
 }
 
 type CreatePekerjaanRequest struct {
@@ -57,4 +59,9 @@ type FilterPekerjaan struct {
 	StatusPekerjaan     *string     `json:"status_pekerjaan"`
 	TahunMulaiKerja     *int        `json:"tahun_mulai"`
 	TahunSelesaiKerja   *int        `json:"tahun_selesai"`
+}
+
+type PekerjaanDeleted struct {
+    ID 			int 		`json:"id"`
+    IsDeleted 	sql.NullTime   `json:"is_deleted"`
 }

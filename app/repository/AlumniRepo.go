@@ -53,7 +53,7 @@ func (r *AlumniRepository) GetAll() ([]models.Alumni, error) {
 func (r *AlumniRepository) GetByID(id int) (*models.Alumni, error) {
     query := `
         SELECT id, nim, nama, jurusan, angkatan, tahun_lulus, email, 
-               no_telepon, alamat, created_at, updated_at 
+               no_telepon, alamat, created_at, updated_at, user_id 
         FROM alumni 
         WHERE id = $1
     `
@@ -62,7 +62,7 @@ func (r *AlumniRepository) GetByID(id int) (*models.Alumni, error) {
     err := r.db.QueryRow(query, id).Scan(
         &a.ID, &a.NIM, &a.Nama, &a.Jurusan, &a.Angkatan,
         &a.TahunLulus, &a.Email, &a.NoTelepon, &a.Alamat,
-        &a.CreatedAt, &a.UpdatedAt,
+        &a.CreatedAt, &a.UpdatedAt,&a.UserID,
     )
     
     if err != nil {

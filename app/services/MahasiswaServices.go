@@ -47,3 +47,7 @@ func (s *MahasiswaService) UpdateMahasiswa(id int, req *models.UpdateMahasiswaRe
 func (s *MahasiswaService) DeleteMahasiswa(id int) error {
     return s.repo.Delete(id)
 }
+
+func (s *MahasiswaService) SoftDeletes(id int, req *models.IsDeleted) (*models.Mahasiswa, error) {
+    return s.repo.SoftDeletes(id, req)
+}

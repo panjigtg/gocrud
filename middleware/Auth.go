@@ -45,7 +45,7 @@ func AdminOnly() fiber.Handler {
 		role, ok := c.Locals("role").(string)
 		if !ok || role != "admin" {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"error": "Akses ditolak. Hanya admin yang diizinkan",
+				"error": "Akses ditolak.",
 			})
 		}
 		return c.Next()
@@ -62,6 +62,8 @@ func RoleOnly(allowedRoles ...string) fiber.Handler {
 			})
 		}
 
+		role = strings.ToLower(role)
+		
 		for _, r := range allowedRoles {
 			if role == r {
 				return c.Next()

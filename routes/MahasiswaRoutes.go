@@ -24,6 +24,7 @@ func (h *MahasiswaHandler) SetupRoutes(app *fiber.App) {
     m.Get("/:id", h.GetMahasiswaByID)
     m.Post("/", h.CreateMahasiswa)
     m.Put("/:id", h.UpdateMahasiswa)
+    m.Put("/softdelete/:id", h.SoftDeletes)
     m.Delete("/:id", h.DeleteMahasiswa)
 }
 
@@ -84,4 +85,20 @@ func (h *MahasiswaHandler) DeleteMahasiswa(c *fiber.Ctx) error {
         return helper.ErrorResponse(c, 404, err.Error())
     }
     return helper.SuccessResponse(c, "Mahasiswa berhasil dihapus", nil)
+}
+
+func (h *MahasiswaHandler) SoftDeletes(c *fiber.Ctx) error {
+    id, err := strconv.Atoi(c.Params("id"))
+    if err != nil {
+        return helper.ErrorResponse(c, 400, "ID tidak valid")
+    }
+    var req models.IsDeleted
+    if err := c.BodyParser(&req); err != nil {
+        return helper.ErrorResponse(c, 400, "Request body tidak valid")
+    }
+    data, err := h.service.SoftDeletes(id, &req)
+    if err != nil {
+        return helper.ErrorResponse(c, 400, err.Error())
+    }
+    return helper.SuccessResponse(c, "Mahasiswa berhasil dihapus secara soft delete", data)
 }

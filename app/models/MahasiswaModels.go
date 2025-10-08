@@ -1,5 +1,10 @@
 package models
 
+import (
+	"database/sql"
+	// "time"
+)
+
 type Mahasiswa struct {
 	ID int `json:"id"`
 	NIM string `json:"nim"`
@@ -9,6 +14,7 @@ type Mahasiswa struct {
 	Email string `json:"email"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+	IsDeleted sql.NullTime `json:"-"`
 }
 
 type CreateMahasiswaRequest struct {
@@ -26,3 +32,7 @@ type UpdateMahasiswaRequest struct {
 	Email string `json:"email"`
 }
 
+type IsDeleted struct {
+	ID 			int 		`json:"id"`
+	IsDeleted 	sql.NullTime   `json:"-"`
+}

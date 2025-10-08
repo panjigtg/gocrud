@@ -87,17 +87,18 @@ func (r *PekerjaanRepository) GetByID(id int) (*models.PekerjaanAlumni, error) {
 
 func (r *PekerjaanRepository) GetByAlumniID(alumniID int) ([]models.PekerjaanAlumni, error) {
     query := `
-        SELECT p.id, p.alumni_id, p.nama_perusahaan, p.posisi_jabatan, 
-               p.bidang_industri, p.lokasi_kerja, p.gaji_range, 
-               p.tanggal_mulai_kerja, p.tanggal_selesai_kerja, 
-               p.status_pekerjaan, p.deskripsi_pekerjaan, 
-               p.created_at, p.updated_at, a.nama as alumni_nama
-        FROM pekerjaan_alumni p
-        LEFT JOIN alumni a ON p.alumni_id = a.id
-        WHERE p.alumni_id = $1
-        ORDER BY p.tanggal_mulai_kerja DESC
+    SELECT 
+        p.id, p.alumni_id, p.nama_perusahaan, p.posisi_jabatan, 
+        p.bidang_industri, p.lokasi_kerja, p.gaji_range, 
+        p.tanggal_mulai_kerja, p.tanggal_selesai_kerja, 
+        p.status_pekerjaan, p.deskripsi_pekerjaan, 
+        p.created_at, p.updated_at, 
+        a.nama as alumni_nama,
+        a.user_id
+    FROM pekerjaan_alumni p
+    LEFT JOIN alumni a ON p.alumni_id = a.id
+    WHERE p.id = $1 AND p.is_deleted IS NULL
     `
-    
     rows, err := r.db.Query(query, alumniID)
     if err != nil {
         return nil, err
@@ -112,7 +113,7 @@ func (r *PekerjaanRepository) GetByAlumniID(alumniID int) ([]models.PekerjaanAlu
             &p.BidangIndustri, &p.LokasiKerja, &p.GajiRange,
             &p.TanggalMulaiKerja, &p.TanggalSelesaiKerja,
             &p.StatusPekerjaan, &p.DeskripsiPekerjaan,
-            &p.CreatedAt, &p.UpdatedAt, &p.AlumniNama,
+            &p.CreatedAt, &p.UpdatedAt, &p.AlumniNama, &p.UserID,
         )
         if err != nil {
             return nil, err
@@ -340,4 +341,108 @@ func (r *PekerjaanRepository) CountPekerjaanRepo(search string) (int, error) {
 	return 0, err
 	}
 	return total, nil
+}
+
+func (r *PekerjaanRepository) SoftDeletes(ID int) error {
+	query := `
+		UPDATE pekerjaan_alumni SET is_deleted = $2 WHERE id = $1 AND is_deleted IS NULL
+	`
+	now := time.Now()
+	_, err := r.db.Exec(query, ID, now)
+	return err
+}
+
+func (r *PekerjaanRepository) GetTrash(role string, userID int) ([]models.PekerjaanAlumni, error) {
+	var rows *sql.Rows
+	var err error
+
+	if role == "admin" {
+		rows, err = r.db.Query(`
+			SELECT 
+				p.id, p.alumni_id, p.nama_perusahaan, p.posisi_jabatan, 
+				p.bidang_industri, p.lokasi_kerja, p.gaji_range,
+				p.tanggal_mulai_kerja, p.tanggal_selesai_kerja,
+				p.status_pekerjaan, p.deskripsi_pekerjaan,
+				p.created_at, p.updated_at,
+				a.nama AS alumni_nama, a.user_id
+			FROM pekerjaan_alumni p
+			JOIN alumni a ON a.id = p.alumni_id
+			WHERE p.is_deleted IS NOT NULL
+			ORDER BY p.is_deleted DESC
+		`)
+	} else {
+		rows, err = r.db.Query(`
+			SELECT 
+				p.id, p.alumni_id, p.nama_perusahaan, p.posisi_jabatan, 
+				p.bidang_industri, p.lokasi_kerja, p.gaji_range,
+				p.tanggal_mulai_kerja, p.tanggal_selesai_kerja,
+				p.status_pekerjaan, p.deskripsi_pekerjaan,
+				p.created_at, p.updated_at,
+				a.nama AS alumni_nama, a.user_id
+			FROM pekerjaan_alumni p
+			JOIN alumni a ON a.id = p.alumni_id
+			WHERE p.is_deleted IS NOT NULL AND a.user_id = $1
+			ORDER BY p.is_deleted DESC
+		`, userID)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var trashList []models.PekerjaanAlumni
+	for rows.Next() {
+		var p models.PekerjaanAlumni
+		err := rows.Scan(
+			&p.ID, &p.AlumniID, &p.NamaPerusahaan, &p.PosisiJabatan,
+			&p.BidangIndustri, &p.LokasiKerja, &p.GajiRange,
+			&p.TanggalMulaiKerja, &p.TanggalSelesaiKerja,
+			&p.StatusPekerjaan, &p.DeskripsiPekerjaan,
+			&p.CreatedAt, &p.UpdatedAt,
+			&p.AlumniNama, &p.UserID,
+		)
+		if err != nil {
+			return nil, err
+		}
+		trashList = append(trashList, p)
+	}
+	return trashList, nil
+}
+
+func (r *PekerjaanRepository) RestoreByID(id int) error {
+	query := `UPDATE pekerjaan_alumni SET is_deleted = NULL, updated_at = NOW() WHERE id = $1`
+	_, err := r.db.Exec(query, id)
+	return err
+}
+
+func (r *PekerjaanRepository) CheckOwnership(pekerjaanID int, userID int) (bool, error) {
+	query := `
+		SELECT COUNT(*) 
+		FROM pekerjaan_alumni p
+		JOIN alumni a ON a.id = p.alumni_id
+		WHERE p.id = $1 AND a.user_id = $2
+	`
+	var count int
+	err := r.db.QueryRow(query, pekerjaanID, userID).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *PekerjaanRepository) DeletePermanent(id int) error {
+	query := `DELETE FROM pekerjaan_alumni WHERE id = $1`
+	_, err := r.db.Exec(query, id)
+	return err
+}
+
+func (r *PekerjaanRepository) IsInTrash(id int) (bool, error) {
+	query := `SELECT COUNT(*) FROM pekerjaan_alumni WHERE id = $1 AND is_deleted IS NOT NULL`
+	var count int
+	err := r.db.QueryRow(query, id).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

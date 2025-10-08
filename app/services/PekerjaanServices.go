@@ -45,7 +45,12 @@ func (s *PekerjaanService) GetPekerjaanByAlumniID(alumniID int) ([]models.Pekerj
 		return nil, err
 	}
 
-	return s.repo.GetByAlumniID(alumniID)
+	pekerjaanList, err := s.repo.GetByAlumniID(alumniID)
+	if err != nil {
+		return nil, err
+	}
+
+	return pekerjaanList, nil
 }
 
 func (s *PekerjaanService) CreatePekerjaan(req *models.CreatePekerjaanRequest) (*models.PekerjaanAlumni, error) {
@@ -183,4 +188,82 @@ func (s *PekerjaanService) GetPekerjaanByFilter(search, sortBy, order string, pa
 		},
 	}
 	return response, nil
+}
+
+func (s *PekerjaanService) SoftDeletePekerjaan(pekerjaanID int, requesterID int, requesterRole string) error {
+	// Ambil data pekerjaan
+	pekerjaan, err := s.repo.GetByID(pekerjaanID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return errors.New("data pekerjaan tidak ditemukan")
+		}
+		return err
+	}
+
+	// Ambil data alumni (validasi user_id)
+	alumni, err := s.alumniRepo.GetByID(pekerjaan.AlumniID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return errors.New("alumni terkait tidak ditemukan")
+		}
+		return err
+	}
+
+	// Validasi akses
+	if requesterRole != "admin" && alumni.UserID != requesterID {
+		return errors.New("anda tidak diizinkan menghapus pekerjaan milik orang lain")
+	}
+
+	// Jalankan soft delete
+	return s.repo.SoftDeletes(pekerjaanID)
+}
+
+
+func (s *PekerjaanService) GetTrash(role string, userID int) ([]models.PekerjaanAlumni, error) {
+	return s.repo.GetTrash(role, userID)
+}
+
+
+func (s *PekerjaanService) RestorePekerjaan(id int, requesterID int, requesterRole string) error {
+	// Admin bisa langsung restore
+	if requesterRole == "admin" {
+		return s.repo.RestoreByID(id)
+	}
+
+	// Untuk user biasa → cek apakah data miliknya
+	isOwner, err := s.repo.CheckOwnership(id, requesterID)
+	if err != nil {
+		return err
+	}
+	if !isOwner {
+		return errors.New("anda tidak memiliki akses untuk restore data ini")
+	}
+
+	return s.repo.RestoreByID(id)
+}
+
+func (s *PekerjaanService) HardDeletePekerjaan(id int, requesterID int, requesterRole string) error {
+	if requesterRole == "admin" {
+		return s.repo.DeletePermanent(id)
+	}
+
+	// Untuk user biasa, cek apakah miliknya sendiri
+	isOwner, err := s.repo.CheckOwnership(id, requesterID)
+	if err != nil {
+		return err
+	}
+	if !isOwner {
+		return errors.New("anda tidak memiliki akses untuk menghapus data ini")
+	}
+
+	// Pastikan data memang sudah dihapus (is_deleted != NULL)
+	isDeleted, err := s.repo.IsInTrash(id)
+	if err != nil {
+		return err
+	}
+	if !isDeleted {
+		return errors.New("data belum dihapus (soft delete) sehingga tidak bisa hard delete")
+	}
+
+	return s.repo.DeletePermanent(id)
 }

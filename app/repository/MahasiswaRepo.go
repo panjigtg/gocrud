@@ -19,7 +19,8 @@ func NewMahasiswaRepository(db *sql.DB) *MahasiswaRepository {
 func (r *MahasiswaRepository) GetAll() ([]models.Mahasiswa, error) {
     query := `
         SELECT id, nim, nama, jurusan, angkatan, email, created_at, updated_at 
-        FROM mahasiswa 
+        FROM mahasiswa
+        WHERE is_deleted IS NULL
         ORDER BY created_at DESC
     `
     rows, err := r.db.Query(query)
@@ -47,7 +48,7 @@ func (r *MahasiswaRepository) GetAll() ([]models.Mahasiswa, error) {
 func (r *MahasiswaRepository) GetByID(id int) (*models.Mahasiswa, error) {
     query := `
         SELECT id, nim, nama, jurusan, angkatan, email, created_at, updated_at
-        FROM mahasiswa WHERE id = $1
+        FROM mahasiswa WHERE id = $1 AND is_deleted IS NULL
     `
     var m models.Mahasiswa
     err := r.db.QueryRow(query, id).Scan(
@@ -96,5 +97,12 @@ func (r *MahasiswaRepository) Delete(id int) error {
     query := "DELETE FROM mahasiswa WHERE id=$1"
     _, err := r.db.Exec(query, id)
     return err
+}
+
+func (r *MahasiswaRepository) SoftDeletes(id int, req *models.IsDeleted) (*models.Mahasiswa, error) {
+    query := "UPDATE mahasiswa SET is_deleted = $2 WHERE id=$1"
+    now := time.Now()
+    _, err := r.db.Exec(query, id, now)
+    return nil, err
 }
 

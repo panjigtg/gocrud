@@ -5,6 +5,7 @@ import (
 	"time"
 	"os"
 	"log"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -22,7 +23,7 @@ func GenerateAccessToken(user models.Users) (string, error) {
 	claims := models.JWTClaims{
 		UserID:   user.ID,
 		Username: user.Username,
-		Role:     user.Role,
+		Role:     strings.ToLower(user.Role), // ✅ normalisasi ke lowercase
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)), 
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -53,4 +54,8 @@ func ValidateToken(tokenString string) (*models.JWTClaims, error) {
 		return claims, nil
 	}
 	return nil, jwt.ErrInvalidKey
+
 }
+
+
+
