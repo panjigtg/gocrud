@@ -6,21 +6,22 @@ import (
 )
 
 type PekerjaanAlumni struct {
-    ID                  int        `json:"id"`
-    AlumniID            int        `json:"alumni_id"`
-    NamaPerusahaan      string     `json:"nama_perusahaan"`
-    PosisiJabatan       string     `json:"posisi_jabatan"`
-    BidangIndustri      string     `json:"bidang_industri"`
-    LokasiKerja         string     `json:"lokasi_kerja"`
-    GajiRange           *string    `json:"gaji_range"`
-    TanggalMulaiKerja   time.Time  `json:"tanggal_mulai_kerja"`
-    TanggalSelesaiKerja *time.Time `json:"tanggal_selesai_kerja"`
-    StatusPekerjaan     string     `json:"status_pekerjaan"`
-    DeskripsiPekerjaan  *string    `json:"deskripsi_pekerjaan"`
-    CreatedAt           time.Time  `json:"created_at"`
-    UpdatedAt           time.Time  `json:"updated_at"`
-    AlumniNama *string `json:"alumni_nama,omitempty"`
-    UserID     *int    `json:"user_id,omitempty"` 
+    ID                  int             `json:"id"`
+    AlumniID            int             `json:"alumni_id"`
+    NamaPerusahaan      string          `json:"nama_perusahaan"`
+    PosisiJabatan       string          `json:"posisi_jabatan"`
+    BidangIndustri      string          `json:"bidang_industri"`
+    LokasiKerja         string          `json:"lokasi_kerja"`
+    GajiRange           *string         `json:"gaji_range"`
+    TanggalMulaiKerja   time.Time       `json:"tanggal_mulai_kerja"`
+    TanggalSelesaiKerja *time.Time      `json:"tanggal_selesai_kerja"`
+    StatusPekerjaan     string          `json:"status_pekerjaan"`
+    DeskripsiPekerjaan  *string         `json:"deskripsi_pekerjaan"`
+    CreatedAt           time.Time       `json:"created_at"`
+    UpdatedAt           time.Time       `json:"updated_at"`
+    AlumniNama          *string         `json:"alumni_nama,omitempty"`
+    UserID              *int            `json:"user_id,omitempty"` 
+    IsDeleted 	        sql.NullTime    `json:"is_deleted"`
 }
 
 type CreatePekerjaanRequest struct {
@@ -62,6 +63,6 @@ type FilterPekerjaan struct {
 }
 
 type PekerjaanDeleted struct {
-    ID 			int 		`json:"id"`
-    IsDeleted 	sql.NullTime   `json:"is_deleted"`
+    ID 			int 		    `json:"id"`
+    IsDeleted 	sql.NullTime    `json:"is_deleted"`
 }

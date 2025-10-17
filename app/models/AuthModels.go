@@ -7,18 +7,16 @@ import(
 )
 
 type Users struct {
-	ID 	  int       `json:"id"`
-	Email string    `json:"email"`
-	// Password string  `json:"password"`
-	Role    string    `json:"role"`
-	Username string  `json:"username"`
-	CreatedAt time.Time `json:"created_at"`
-	// UpdatedAt time.Time `json:"updated_at"`	
+	ID 	  int       		`json:"id"`
+	Email string    		`json:"email"`
+	Role    string    		`json:"role"`
+	Username string  		`json:"username"`
+	CreatedAt time.Time 	`json:"created_at"`
 }
 
 type LoginRequest struct {
-	UsernameOrEmail    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=8"`
+	UsernameOrEmail    	string 	`json:"email" validate:"required,email"`
+	Password 			string 	`json:"password" validate:"required,min=8"`
 }
 
 type LoginResponse struct {
@@ -41,6 +39,4 @@ type JWTClaims struct {
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
-
-
-// type 
+ 

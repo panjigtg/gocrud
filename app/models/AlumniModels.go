@@ -39,10 +39,10 @@ type UpdateAlumniRequest struct {
 }
 
 type FilterAlumni struct {
-    Nama            string `json:"nama" query:"nama"`
-    Jurusan         string `json:"jurusan" query:"jurusan"`
-    Angkatan        int    `json:"angkatan" query:"angkatan"`
-    TahunLulus      int    `json:"tahun_lulus" query:"tahun_lulus"`
+    Nama            string  `json:"nama" query:"nama"`
+    Jurusan         string  `json:"jurusan" query:"jurusan"`
+    Angkatan        int     `json:"angkatan" query:"angkatan"`
+    TahunLulus      int     `json:"tahun_lulus" query:"tahun_lulus"`
 	NamaPerusahaan  *string `json:"nama_perusahaan" query:"nama_perusahaan"`
 	StatusPekerjaan *string `json:"status_pekerjaan" query:"status_pekerjaan"`
 }

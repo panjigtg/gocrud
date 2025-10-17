@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,18 +20,24 @@ type LogEntry struct {
 	IP           string      `json:"ip"`
 }
 
+// path global log
+var logDir = filepath.Join(".", "logs")
+var logFile = filepath.Join(logDir, "response.log")
+
 func ensureLogDir() {
-	logDir := `D:\hp\Documents\Kuliah Panji\smt5\Pemrograman Backend\crudprojectgo\logs`
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		os.MkdirAll(logDir, 0755)
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			log.Printf("Error creating log directory: %v", err)
+		}
 	}
 }
 
 func LogResponse(c *fiber.Ctx, statusCode int, responseBody interface{}) {
-	log.Printf("[DEBUG] LogResponse called - Method: %s, URL: %s, Status: %d", c.Method(), c.OriginalURL(), statusCode)
-	
+	log.Printf("[DEBUG] LogResponse called - Method: %s, URL: %s, Status: %d",
+		c.Method(), c.OriginalURL(), statusCode)
+
 	ensureLogDir()
-	
+
 	logEntry := LogEntry{
 		Timestamp:    time.Now(),
 		Method:       c.Method(),
@@ -40,31 +47,24 @@ func LogResponse(c *fiber.Ctx, statusCode int, responseBody interface{}) {
 		UserAgent:    c.Get("User-Agent"),
 		IP:           c.IP(),
 	}
-	
-	logFileName := `D:\hp\Documents\Kuliah Panji\smt5\Pemrograman Backend\crudprojectgo\logs\response.log`
-	
-	// Convert to JSON
+
 	logJSON, err := json.Marshal(logEntry)
 	if err != nil {
 		log.Printf("Error marshaling log entry: %v", err)
 		return
 	}
-	
-	log.Printf("[DEBUG] Attempting to write to: %s", logFileName)
-	
-	// Write to file
-	file, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Printf("Error opening log file: %v", err)
 		return
 	}
 	defer file.Close()
-	
-	_, writeErr := file.WriteString(string(logJSON) + "\n")
-	if writeErr != nil {
-		log.Printf("Error writing to log file: %v", writeErr)
+
+	if _, err := file.WriteString(string(logJSON) + "\n"); err != nil {
+		log.Printf("Error writing to log file: %v", err)
 		return
 	}
-	
-	log.Printf("[DEBUG] Successfully logged response to file")
+
+	log.Printf("[DEBUG] Successfully logged response to %s", logFile)
 }

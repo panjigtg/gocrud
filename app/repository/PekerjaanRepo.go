@@ -31,7 +31,6 @@ func (r *PekerjaanRepository) GetAll() ([]models.PekerjaanAlumni, error) {
         LEFT JOIN alumni a ON p.alumni_id = a.id
         ORDER BY p.created_at DESC
     `
-    
     rows, err := r.db.Query(query)
     if err != nil {
         return nil, err
@@ -363,7 +362,7 @@ func (r *PekerjaanRepository) GetTrash(role string, userID int) ([]models.Pekerj
 				p.bidang_industri, p.lokasi_kerja, p.gaji_range,
 				p.tanggal_mulai_kerja, p.tanggal_selesai_kerja,
 				p.status_pekerjaan, p.deskripsi_pekerjaan,
-				p.created_at, p.updated_at,
+				p.created_at, p.updated_at,p.is_deleted,
 				a.nama AS alumni_nama, a.user_id
 			FROM pekerjaan_alumni p
 			JOIN alumni a ON a.id = p.alumni_id
@@ -377,7 +376,7 @@ func (r *PekerjaanRepository) GetTrash(role string, userID int) ([]models.Pekerj
 				p.bidang_industri, p.lokasi_kerja, p.gaji_range,
 				p.tanggal_mulai_kerja, p.tanggal_selesai_kerja,
 				p.status_pekerjaan, p.deskripsi_pekerjaan,
-				p.created_at, p.updated_at,
+				p.created_at, p.updated_at, p.is_deleted,
 				a.nama AS alumni_nama, a.user_id
 			FROM pekerjaan_alumni p
 			JOIN alumni a ON a.id = p.alumni_id
@@ -399,7 +398,7 @@ func (r *PekerjaanRepository) GetTrash(role string, userID int) ([]models.Pekerj
 			&p.BidangIndustri, &p.LokasiKerja, &p.GajiRange,
 			&p.TanggalMulaiKerja, &p.TanggalSelesaiKerja,
 			&p.StatusPekerjaan, &p.DeskripsiPekerjaan,
-			&p.CreatedAt, &p.UpdatedAt,
+			&p.CreatedAt, &p.UpdatedAt, &p.IsDeleted,
 			&p.AlumniNama, &p.UserID,
 		)
 		if err != nil {

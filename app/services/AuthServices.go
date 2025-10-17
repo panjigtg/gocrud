@@ -64,12 +64,10 @@ func (s *AuthServices) Register(req models.RegisterRequest) (models.Users, error
 		role = "user"
 	}
 
-	// Insert ke database pakai role
 	newUser, err := s.repo.CreateUserWithRole(req.Username, req.Email, hashedPassword, role)
 	if err != nil {
 		return models.Users{}, errors.New("Gagal membuat user")
 	}
-
 	return newUser, nil
 }
 
