@@ -351,7 +351,7 @@ func (r *PekerjaanRepository) SoftDeletes(ID int) error {
 	return err
 }
 
-func (r *PekerjaanRepository) GetTrash(role string, userID int) ([]models.PekerjaanAlumni, error) {
+func (r *PekerjaanRepository) GetTrash(role string, userID int) ([]models.Trash, error) {
 	var rows *sql.Rows
 	var err error
 
@@ -390,9 +390,9 @@ func (r *PekerjaanRepository) GetTrash(role string, userID int) ([]models.Pekerj
 	}
 	defer rows.Close()
 
-	var trashList []models.PekerjaanAlumni
+	var trashList []models.Trash
 	for rows.Next() {
-		var p models.PekerjaanAlumni
+		var p models.Trash
 		err := rows.Scan(
 			&p.ID, &p.AlumniID, &p.NamaPerusahaan, &p.PosisiJabatan,
 			&p.BidangIndustri, &p.LokasiKerja, &p.GajiRange,

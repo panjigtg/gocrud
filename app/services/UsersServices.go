@@ -2,9 +2,13 @@ package services
 
 import (
 	"strings"
+	"strconv"
 
 	"crudprojectgo/app/models"
 	"crudprojectgo/app/repository"
+	"crudprojectgo/helper"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type UsersService struct {
@@ -12,15 +16,19 @@ type UsersService struct {
 }
 
 func NewUsersService(repo *repository.UsersRepository) *UsersService {
-	return &UsersService{
-		repo: repo,
-	}
+	return &UsersService{repo: repo}
 }
 
-func (s *UsersService) GetUsersService(page, limit int, sortBy, order, search string) (models.UserResponse, error) {
+func (s *UsersService) GetUsers(c *fiber.Ctx) error {
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	sortBy := c.Query("sortBy", "id")
+	order := c.Query("order", "asc")
+	search := c.Query("search", "")
+
 	offset := (page - 1) * limit
 
-	// Validasi input sortBy dan order
+	// validasi sortBy & order
 	sortByWhitelist := map[string]bool{
 		"id":         true,
 		"name":       true,
@@ -36,12 +44,12 @@ func (s *UsersService) GetUsersService(page, limit int, sortBy, order, search st
 
 	users, err := s.repo.GetUsersRepo(search, sortBy, order, page, limit, offset)
 	if err != nil {
-		return models.UserResponse{}, err
+		return helper.ErrorResponse(c, 500, "Gagal mengambil data user")
 	}
 
 	total, err := s.repo.CountUsersRepo(search)
 	if err != nil {
-		return models.UserResponse{}, err
+		return helper.ErrorResponse(c, 500, "Gagal menghitung jumlah user")
 	}
 
 	response := models.UserResponse{
@@ -57,5 +65,5 @@ func (s *UsersService) GetUsersService(page, limit int, sortBy, order, search st
 		},
 	}
 
-	return response, nil
+	return helper.SuccessResponse(c, "Data user berhasil diambil", response)
 }

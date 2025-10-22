@@ -33,7 +33,5 @@ func KoneksiDB() *sql.DB {
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Gagal konek ke database: %v", err)
 	}
-
-	fmt.Println("Koneksi ke database berhasil")
 	return db
 }

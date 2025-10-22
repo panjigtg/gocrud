@@ -3,9 +3,13 @@ package services
 import (
 	"crudprojectgo/app/models"
 	"crudprojectgo/app/repository"
+	"crudprojectgo/helper"
 	"database/sql"
 	"errors"
+	"strconv"
 	"strings"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type PekerjaanService struct {
@@ -14,137 +18,151 @@ type PekerjaanService struct {
 }
 
 func NewPekerjaanService(repo *repository.PekerjaanRepository, alumniRepo *repository.AlumniRepository) *PekerjaanService {
-	return &PekerjaanService{
-		repo:       repo,
-		alumniRepo: alumniRepo,
+	return &PekerjaanService{repo: repo, alumniRepo: alumniRepo}
+}
+
+func (s *PekerjaanService) GetAllPekerjaan(c *fiber.Ctx) error {
+	data, err := s.repo.GetAll()
+	if err != nil {
+		return helper.ErrorResponse(c, 500, "Gagal mengambil data pekerjaan")
 	}
+	return helper.SuccessResponse(c, "Data pekerjaan berhasil diambil", data)
 }
 
-func (s *PekerjaanService) GetAllPekerjaan() ([]models.PekerjaanAlumni, error) {
-	return s.repo.GetAll()
+func (s *PekerjaanService) GetPekerjaanByID(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return helper.ErrorResponse(c, 400, "ID tidak valid")
+	}
+	data, err := s.repo.GetByID(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return helper.ErrorResponse(c, 404, "Pekerjaan tidak ditemukan")
+		}
+		return helper.ErrorResponse(c, 500, "Kesalahan server")
+	}
+	return helper.SuccessResponse(c, "Data pekerjaan berhasil diambil", data)
 }
 
-func (s *PekerjaanService) GetPekerjaanByID(id int) (*models.PekerjaanAlumni, error) {
-	pekerjaan, err := s.repo.GetByID(id)
+func (s *PekerjaanService) GetPekerjaanByAlumniID(c *fiber.Ctx) error {
+	alumniID, err := strconv.Atoi(c.Params("alumni_id"))
+	if err != nil {
+		return helper.ErrorResponse(c, 400, "Alumni ID tidak valid")
+	}
+
+	// pastikan alumni ada
+	_, err = s.alumniRepo.GetByID(alumniID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("pekerjaan tidak ditemukan")
+			return helper.ErrorResponse(c, 404, "Alumni tidak ditemukan")
 		}
-		return nil, err
+		return helper.ErrorResponse(c, 500, "Kesalahan saat mengambil alumni")
 	}
-	return pekerjaan, nil
+
+	data, err := s.repo.GetByAlumniID(alumniID)
+	if err != nil {
+		return helper.ErrorResponse(c, 500, "Gagal mengambil data pekerjaan alumni")
+	}
+	if len(data) == 0 {
+		return c.Status(200).JSON(fiber.Map{
+			"success": true,
+			"message": "Data pekerjaan alumni tidak ditemukan",
+			"data":    []models.PekerjaanAlumni{},
+		})
+	}
+	return helper.SuccessResponse(c, "Data pekerjaan alumni berhasil diambil", data)
 }
 
-func (s *PekerjaanService) GetPekerjaanByAlumniID(alumniID int) ([]models.PekerjaanAlumni, error) {
-	// Cek apakah alumni ada
-	_, err := s.alumniRepo.GetByID(alumniID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("alumni tidak ditemukan")
-		}
-		return nil, err
+func (s *PekerjaanService) CreatePekerjaan(c *fiber.Ctx) error {
+	var req models.CreatePekerjaanRequest
+	if err := c.BodyParser(&req); err != nil {
+		return helper.ErrorResponse(c, 400, "Request body tidak valid")
 	}
 
-	pekerjaanList, err := s.repo.GetByAlumniID(alumniID)
-	if err != nil {
-		return nil, err
-	}
-
-	return pekerjaanList, nil
-}
-
-func (s *PekerjaanService) CreatePekerjaan(req *models.CreatePekerjaanRequest) (*models.PekerjaanAlumni, error) {
-	// Validasi input
 	if req.AlumniID <= 0 {
-		return nil, errors.New("alumni ID harus valid")
+		return helper.ErrorResponse(c, 400, "Alumni ID harus valid")
 	}
-
 	if req.NamaPerusahaan == "" || req.PosisiJabatan == "" || req.BidangIndustri == "" || req.LokasiKerja == "" {
-		return nil, errors.New("nama perusahaan, posisi jabatan, bidang industri, dan lokasi kerja harus diisi")
+		return helper.ErrorResponse(c, 400, "Nama perusahaan, posisi jabatan, bidang industri, dan lokasi kerja wajib diisi")
 	}
 
-	if req.TanggalMulaiKerja == "" {
-		return nil, errors.New("tanggal mulai kerja harus diisi")
-	}
-
-	if req.StatusPekerjaan == "" {
-		req.StatusPekerjaan = "aktif"
-	}
-
-	// Validasi status pekerjaan
 	validStatus := []string{"aktif", "selesai", "resigned"}
-	isValidStatus := false
-	for _, status := range validStatus {
-		if req.StatusPekerjaan == status {
-			isValidStatus = true
+	isValid := false
+	for _, v := range validStatus {
+		if strings.EqualFold(req.StatusPekerjaan, v) {
+			isValid = true
 			break
 		}
 	}
-	if !isValidStatus {
-		return nil, errors.New("status pekerjaan harus salah satu dari: aktif, selesai, resigned")
+	if !isValid {
+		return helper.ErrorResponse(c, 400, "Status pekerjaan harus salah satu dari: aktif, selesai, resigned")
 	}
 
-	// Cek apakah alumni ada
+	// cek alumni
 	_, err := s.alumniRepo.GetByID(req.AlumniID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("alumni tidak ditemukan")
+			return helper.ErrorResponse(c, 404, "Alumni tidak ditemukan")
 		}
-		return nil, err
+		return helper.ErrorResponse(c, 500, "Kesalahan saat validasi alumni")
 	}
 
-	return s.repo.Create(req)
-}
-
-func (s *PekerjaanService) UpdatePekerjaan(id int, req *models.UpdatePekerjaanRequest) (*models.PekerjaanAlumni, error) {
-	// Validasi input
-	if req.NamaPerusahaan == "" || req.PosisiJabatan == "" || req.BidangIndustri == "" || req.LokasiKerja == "" {
-		return nil, errors.New("nama perusahaan, posisi jabatan, bidang industri, dan lokasi kerja harus diisi")
-	}
-
-	if req.TanggalMulaiKerja == "" {
-		return nil, errors.New("tanggal mulai kerja harus diisi")
-	}
-
-	// Validasi status pekerjaan
-	validStatus := []string{"aktif", "selesai", "resigned"}
-	isValidStatus := false
-	for _, status := range validStatus {
-		if req.StatusPekerjaan == status {
-			isValidStatus = true
-			break
-		}
-	}
-	if !isValidStatus {
-		return nil, errors.New("status pekerjaan harus salah satu dari: aktif, selesai, resigned")
-	}
-
-	pekerjaan, err := s.repo.Update(id, req)
+	data, err := s.repo.Create(&req)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("pekerjaan tidak ditemukan")
-		}
-		return nil, err
+		return helper.ErrorResponse(c, 500, "Gagal menambahkan pekerjaan")
 	}
-
-	return pekerjaan, nil
+	return helper.CreatedResponse(c, "Pekerjaan berhasil ditambahkan", data)
 }
 
-func (s *PekerjaanService) DeletePekerjaan(id int) error {
-	err := s.repo.Delete(id)
+func (s *PekerjaanService) UpdatePekerjaan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return errors.New("pekerjaan tidak ditemukan")
-		}
-		return err
+		return helper.ErrorResponse(c, 400, "ID tidak valid")
 	}
-	return nil
+
+	var req models.UpdatePekerjaanRequest
+	if err := c.BodyParser(&req); err != nil {
+		return helper.ErrorResponse(c, 400, "Request body tidak valid")
+	}
+
+	if req.NamaPerusahaan == "" || req.PosisiJabatan == "" || req.BidangIndustri == "" {
+		return helper.ErrorResponse(c, 400, "Nama perusahaan, posisi jabatan, bidang industri wajib diisi")
+	}
+
+	data, err := s.repo.Update(id, &req)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return helper.ErrorResponse(c, 404, "Pekerjaan tidak ditemukan")
+		}
+		return helper.ErrorResponse(c, 500, "Gagal memperbarui pekerjaan")
+	}
+	return helper.SuccessResponse(c, "Pekerjaan berhasil diperbarui", data)
 }
 
-func (s *PekerjaanService) GetPekerjaanByFilter(search, sortBy, order string, page, limit int) (models.PekerjaanResponse, error) {
-	offset := (page - 1) * limit
+func (s *PekerjaanService) DeletePekerjaan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return helper.ErrorResponse(c, 400, "ID tidak valid")
+	}
+	err = s.repo.Delete(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return helper.ErrorResponse(c, 404, "Pekerjaan tidak ditemukan")
+		}
+		return helper.ErrorResponse(c, 500, "Gagal menghapus pekerjaan")
+	}
+	return helper.SuccessResponse(c, "Pekerjaan berhasil dihapus permanen", nil)
+}
 
-	SortByAlias := map[string]string{
+
+func (s *PekerjaanService) GetPekerjaanByFilter(c *fiber.Ctx) error {
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	sortBy := c.Query("sortBy", "id")
+	order := c.Query("order", "asc")
+	search := c.Query("search", "")
+
+	sortMap := map[string]string{
 		"nama alumni":      "a.nama",
 		"nama perusahaan":  "p.nama_perusahaan",
 		"posisi jabatan":   "p.posisi_jabatan",
@@ -152,118 +170,94 @@ func (s *PekerjaanService) GetPekerjaanByFilter(search, sortBy, order string, pa
 		"lokasi kerja":     "p.lokasi_kerja",
 		"gaji range":       "p.gaji_range",
 		"status pekerjaan": "p.status_pekerjaan",
-		"tahun mulai":      "COALESCE(EXTRACT(YEAR FROM p.tanggal_mulai_kerja), 0)",
-		"tahun selesai":    "COALESCE(EXTRACT(YEAR FROM p.tanggal_selesai_kerja), 0)",
 	}
-
-	sortCol, ok := SortByAlias[strings.ToLower(sortBy)]
+	col, ok := sortMap[strings.ToLower(sortBy)]
 	if !ok {
-		return models.PekerjaanResponse{}, errors.New("kolom sortBy tidak valid")
+		return helper.ErrorResponse(c, 400, "Kolom sortBy tidak valid")
 	}
 
-	if strings.ToLower(order) != "desc" {
-		order = "asc"
-	}
-
-	pekerjaan, err := s.repo.GetByFilter(search, sortCol, order, page, limit, offset)
+	data, err := s.repo.GetByFilter(search, col, order, page, limit, (page-1)*limit)
 	if err != nil {
-		return models.PekerjaanResponse{}, err
+		return helper.ErrorResponse(c, 500, "Gagal mengambil data pekerjaan")
 	}
 
-	total, err := s.repo.CountPekerjaanRepo(search)
-	if err != nil {
-		return models.PekerjaanResponse{}, err
+	total, _ := s.repo.CountPekerjaanRepo(search)
+	meta := models.MetaInfo{
+		Page:  page,
+		Limit: limit,
+		Total: total,
+		Pages: (total + limit - 1) / limit,
 	}
-
-	response := models.PekerjaanResponse{
-		Data: pekerjaan,
-		Meta: models.MetaInfo{
-			Page:   page,
-			Limit:  limit,
-			Total:  total,
-			Pages:  (total + limit - 1) / limit,
-			SortBy: sortBy,
-			Order:  order,
-			Search: search,
-		},
-	}
-	return response, nil
-}
-
-func (s *PekerjaanService) SoftDeletePekerjaan(pekerjaanID int, requesterID int, requesterRole string) error {
-	// Ambil data pekerjaan
-	pekerjaan, err := s.repo.GetByID(pekerjaanID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return errors.New("data pekerjaan tidak ditemukan")
-		}
-		return err
-	}
-
-	// Ambil data alumni (validasi user_id)
-	alumni, err := s.alumniRepo.GetByID(pekerjaan.AlumniID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return errors.New("alumni terkait tidak ditemukan")
-		}
-		return err
-	}
-
-	// Validasi akses
-	if requesterRole != "admin" && alumni.UserID != requesterID {
-		return errors.New("anda tidak diizinkan menghapus pekerjaan milik orang lain")
-	}
-
-	// Jalankan soft delete
-	return s.repo.SoftDeletes(pekerjaanID)
+	return helper.SuccessResponse(c, "Data pekerjaan berhasil diambil", fiber.Map{"meta": meta, "data": data})
 }
 
 
-func (s *PekerjaanService) GetTrash(role string, userID int) ([]models.PekerjaanAlumni, error) {
-	return s.repo.GetTrash(role, userID)
+func (s *PekerjaanService) SoftDeletePekerjaan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return helper.ErrorResponse(c, 400, "ID tidak valid")
+	}
+
+	err = s.repo.SoftDeletes(id)
+	if err != nil {
+		return helper.ErrorResponse(c, 500, "Gagal melakukan soft delete")
+	}
+
+	return helper.SuccessResponse(c, "Pekerjaan berhasil dihapus (soft delete)", nil)
 }
 
+func (s *PekerjaanService) GetTrash(c *fiber.Ctx) error {
+	role := c.Locals("role").(string)
+	userID := c.Locals("user_id").(int)
 
-func (s *PekerjaanService) RestorePekerjaan(id int, requesterID int, requesterRole string) error {
-	// Admin bisa langsung restore
-	if requesterRole == "admin" {
-		return s.repo.RestoreByID(id)
-	}
-
-	// Untuk user biasa → cek apakah data miliknya
-	isOwner, err := s.repo.CheckOwnership(id, requesterID)
+	data, err := s.repo.GetTrash(role, userID)
 	if err != nil {
-		return err
-	}
-	if !isOwner {
-		return errors.New("anda tidak memiliki akses untuk restore data ini")
+		return helper.ErrorResponse(c, 500, "Gagal mengambil data trash")
 	}
 
-	return s.repo.RestoreByID(id)
+	if len(data) == 0 {
+		return c.Status(200).JSON(fiber.Map{
+			"success": true,
+			"message": "Tidak ada data di trash",
+			"data":    []models.Trash{},
+		})
+	}
+
+	return helper.SuccessResponse(c, "Data trash berhasil diambil", data)
 }
 
-func (s *PekerjaanService) HardDeletePekerjaan(id int, requesterID int, requesterRole string) error {
-	if requesterRole == "admin" {
-		return s.repo.DeletePermanent(id)
-	}
-
-	// Untuk user biasa, cek apakah miliknya sendiri
-	isOwner, err := s.repo.CheckOwnership(id, requesterID)
+func (s *PekerjaanService) RestorePekerjaan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
-		return err
-	}
-	if !isOwner {
-		return errors.New("anda tidak memiliki akses untuk menghapus data ini")
+		return helper.ErrorResponse(c, 400, "ID tidak valid")
 	}
 
-	// Pastikan data memang sudah dihapus (is_deleted != NULL)
+	err = s.repo.RestoreByID(id)
+	if err != nil {
+		return helper.ErrorResponse(c, 500, "Gagal merestore pekerjaan")
+	}
+
+	return helper.SuccessResponse(c, "Pekerjaan berhasil direstore", nil)
+}
+
+func (s *PekerjaanService) HardDeletePekerjaan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return helper.ErrorResponse(c, 400, "ID tidak valid")
+	}
+
 	isDeleted, err := s.repo.IsInTrash(id)
 	if err != nil {
-		return err
+		return helper.ErrorResponse(c, 500, "Gagal memeriksa status trash")
 	}
 	if !isDeleted {
-		return errors.New("data belum dihapus (soft delete) sehingga tidak bisa hard delete")
+		return helper.ErrorResponse(c, 400, "Data belum dihapus (soft delete) sehingga tidak bisa hard delete")
 	}
 
-	return s.repo.DeletePermanent(id)
+	err = s.repo.DeletePermanent(id)
+	if err != nil {
+		return helper.ErrorResponse(c, 500, "Gagal menghapus data permanen")
+	}
+
+	return helper.SuccessResponse(c, "Pekerjaan berhasil dihapus permanen", nil)
 }
