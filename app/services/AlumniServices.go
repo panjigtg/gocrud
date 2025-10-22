@@ -2,7 +2,7 @@ package services
 
 import (
 	"crudprojectgo/app/models"
-	"crudprojectgo/app/repository"
+	"crudprojectgo/app/repository/psql"
 	"crudprojectgo/helper"
 	"database/sql"
 	"errors"
@@ -13,10 +13,10 @@ import (
 )
 
 type AlumniService struct {
-	repo *repository.AlumniRepository
+	repo *psql.AlumniRepository
 }
 
-func NewAlumniService(repo *repository.AlumniRepository) *AlumniService {
+func NewAlumniService(repo *psql.AlumniRepository) *AlumniService {
 	return &AlumniService{repo: repo}
 }
 

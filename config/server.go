@@ -8,6 +8,9 @@ import (
 
 func RegisterRoutes(app *fiber.App, s *ServiceContainer) {
 	routes.AlumniRoutes(app, s.Alumni)
+	routes.AuthRoutes(app, s.Auth)
+	routes.UsersRoutes(app, s.Users)
+	routes.PekerjaanRoutes(app,s.Pekerjaan)
 }
 
 func StartServer(app *fiber.App) {

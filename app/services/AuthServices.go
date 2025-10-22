@@ -2,7 +2,7 @@ package services
 
 import (
 	"crudprojectgo/app/models"
-	"crudprojectgo/app/repository"
+	"crudprojectgo/app/repository/psql"
 	"crudprojectgo/helper"
 	"crudprojectgo/utils"
 	"database/sql"
@@ -12,10 +12,10 @@ import (
 )
 
 type AuthServices struct {
-	repo *repository.AuthRepository
+	repo *psql.AuthRepository
 }
 
-func NewAuthServices(repo *repository.AuthRepository) *AuthServices {
+func NewAuthServices(repo *psql.AuthRepository) *AuthServices {
 	return &AuthServices{repo: repo}
 }
 

@@ -2,16 +2,16 @@ package config
 
 import (
 	"database/sql"
-	"crudprojectgo/app/repository"
+	"crudprojectgo/app/repository/psql"
 	"crudprojectgo/app/services"
 )
 
 type RepositoryContainer struct {
-	Mahasiswa *repository.MahasiswaRepository
-	Alumni    *repository.AlumniRepository
-	Pekerjaan *repository.PekerjaanRepository
-	Auth      *repository.AuthRepository
-	Users     *repository.UsersRepository
+	Mahasiswa *psql.MahasiswaRepository
+	Alumni    *psql.AlumniRepository
+	Pekerjaan *psql.PekerjaanRepository
+	Auth      *psql.AuthRepository
+	Users     *psql.UsersRepository
 }
 
 type ServiceContainer struct {
@@ -24,11 +24,11 @@ type ServiceContainer struct {
 
 func InitRepositories(db *sql.DB) *RepositoryContainer {
 	return &RepositoryContainer{
-		Mahasiswa: repository.NewMahasiswaRepository(db),
-		Alumni:    repository.NewAlumniRepository(db),
-		Pekerjaan: repository.NewPekerjaanRepository(db),
-		Auth:      repository.NewAuthRepository(db),
-		Users:     repository.NewUsersRepository(db),
+		Mahasiswa: psql.NewMahasiswaRepository(db),
+		Alumni:    psql.NewAlumniRepository(db),
+		Pekerjaan: psql.NewPekerjaanRepository(db),
+		Auth:      psql.NewAuthRepository(db),
+		Users:     psql.NewUsersRepository(db),
 	}
 }
 

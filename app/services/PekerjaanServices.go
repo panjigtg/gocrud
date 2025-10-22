@@ -2,7 +2,7 @@ package services
 
 import (
 	"crudprojectgo/app/models"
-	"crudprojectgo/app/repository"
+	"crudprojectgo/app/repository/psql"
 	"crudprojectgo/helper"
 	"database/sql"
 	"errors"
@@ -13,11 +13,11 @@ import (
 )
 
 type PekerjaanService struct {
-	repo       *repository.PekerjaanRepository
-	alumniRepo *repository.AlumniRepository
+	repo       *psql.PekerjaanRepository
+	alumniRepo *psql.AlumniRepository
 }
 
-func NewPekerjaanService(repo *repository.PekerjaanRepository, alumniRepo *repository.AlumniRepository) *PekerjaanService {
+func NewPekerjaanService(repo *psql.PekerjaanRepository, alumniRepo *psql.AlumniRepository) *PekerjaanService {
 	return &PekerjaanService{repo: repo, alumniRepo: alumniRepo}
 }
 

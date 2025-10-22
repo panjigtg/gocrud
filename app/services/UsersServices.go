@@ -5,17 +5,17 @@ import (
 	"strconv"
 
 	"crudprojectgo/app/models"
-	"crudprojectgo/app/repository"
+	"crudprojectgo/app/repository/psql"
 	"crudprojectgo/helper"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type UsersService struct {
-	repo *repository.UsersRepository
+	repo *psql.UsersRepository
 }
 
-func NewUsersService(repo *repository.UsersRepository) *UsersService {
+func NewUsersService(repo *psql.UsersRepository) *UsersService {
 	return &UsersService{repo: repo}
 }
 
