@@ -7,7 +7,7 @@ import (
 )
 
 func MahasiswaRoutes(app *fiber.App, service *services.MahasiswaService) {
-	m := app.Group("/alumni-management/mahasiswa")
+	m := app.Group("/api/mahasiswa")
 
 	m.Get("/", service.GetAllMahasiswa)
 	m.Get("/:id", service.GetMahasiswaByID)

@@ -22,5 +22,4 @@ type PekerjaanAlumniMongo struct {
 	CreatedAt           time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt           time.Time          `bson:"updated_at" json:"updated_at"`
 	AlumniNama          *string            `bson:"alumni_nama,omitempty" json:"alumni_nama,omitempty"`
-	UserID              *int               `bson:"user_id,omitempty" json:"user_id,omitempty"`
 }

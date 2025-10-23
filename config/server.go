@@ -11,6 +11,7 @@ func RegisterRoutes(app *fiber.App, s *ServiceContainer) {
 	routes.AuthRoutes(app, s.Auth)
 	routes.UsersRoutes(app, s.Users)
 	routes.PekerjaanRoutes(app,s.Pekerjaan)
+	routes.PekerjaanMongoRoutes(app, s.PekerjaanMongo)
 }
 
 func StartServer(app *fiber.App) {

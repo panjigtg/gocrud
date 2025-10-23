@@ -16,7 +16,6 @@ func NewAuthRepository(db *sql.DB) *AuthRepository {
 	}
 }
 
-// ✅ Method untuk login (username/email)
 func (r *AuthRepository) GetUserByUsernameOrEmail(identifier string) (models.Users, string, error) {
 	var user models.Users
 	var passwordHash string

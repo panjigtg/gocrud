@@ -8,7 +8,7 @@ import (
 )
 
 func PekerjaanRoutes(app *fiber.App, service *services.PekerjaanService) {
-	r := app.Group("/alumni-management/pekerjaan")
+	r := app.Group("/api/v1/pekerjaan")
 
 	r.Get("/trash", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), service.GetTrash)
 	r.Get("/filter", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), service.GetPekerjaanByFilter)

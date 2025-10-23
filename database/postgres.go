@@ -33,6 +33,6 @@ func KoneksiDB() *sql.DB {
 	if err := db.Ping(); err != nil {
 		log.Fatalf("Can't Connect: %v", err)
 	}
-	log.Fatalf("Succes Connect")
+	log.Println("Succes Connect")
 	return db
 }
