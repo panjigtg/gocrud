@@ -47,14 +47,13 @@ func (s *PekerjaanServiceMongo) GetAll(c *fiber.Ctx) error {
 
 // === GET /api/v2/pekerjaan/:id ===
 func (s *PekerjaanServiceMongo) GetByID(c *fiber.Ctx) error {
-	id := c.Params("id")
-	objID, err := primitive.ObjectIDFromHex(id)
+	id, err := c.ParamsInt("id")
 	if err != nil {
 		return helper.ErrorResponse(c, 400, "ID tidak valid")
 	}
 
 	var data models.PekerjaanAlumniMongo
-	err = s.Repo.Col.FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&data)
+	err = s.Repo.Col.FindOne(context.TODO(), bson.M{"original_id": id}).Decode(&data)
 	if err != nil {
 		return helper.ErrorResponse(c, 404, "Data tidak ditemukan")
 	}
@@ -102,9 +101,9 @@ func (s *PekerjaanServiceMongo) Create(c *fiber.Ctx) error {
 }
 
 // === PUT /api/v2/pekerjaan/:id ===
+// === PUT /api/v2/pekerjaan/:id ===
 func (s *PekerjaanServiceMongo) Update(c *fiber.Ctx) error {
-	id := c.Params("id")
-	objID, err := primitive.ObjectIDFromHex(id)
+	id, err := c.ParamsInt("id")
 	if err != nil {
 		return helper.ErrorResponse(c, 400, "ID tidak valid")
 	}
@@ -116,18 +115,28 @@ func (s *PekerjaanServiceMongo) Update(c *fiber.Ctx) error {
 
 	update := bson.M{
 		"$set": bson.M{
-			"nama_perusahaan":  req.NamaPerusahaan,
-			"posisi_jabatan":   req.PosisiJabatan,
-			"bidang_industri":  req.BidangIndustri,
-			"lokasi_kerja":     req.LokasiKerja,
-			"status_pekerjaan": req.StatusPekerjaan,
-			"updated_at":       time.Now(),
+			"nama_perusahaan":   req.NamaPerusahaan,
+			"posisi_jabatan":    req.PosisiJabatan,
+			"bidang_industri":   req.BidangIndustri,
+			"lokasi_kerja":      req.LokasiKerja,
+			"status_pekerjaan":  req.StatusPekerjaan,
+			"gaji_range":        req.GajiRange,
+			"deskripsi_pekerjaan": req.DeskripsiPekerjaan,
+			"updated_at":        time.Now(),
 		},
 	}
 
-	_, err = s.Repo.Col.UpdateOne(context.TODO(), bson.M{"_id": objID}, update)
+	result, err := s.Repo.Col.UpdateOne(
+		context.TODO(),
+		bson.M{"original_id": id},
+		update,
+	)
 	if err != nil {
 		return helper.ErrorResponse(c, 500, "Gagal memperbarui data")
+	}
+
+	if result.MatchedCount == 0 {
+		return helper.ErrorResponse(c, 404, "Data tidak ditemukan")
 	}
 
 	return helper.SuccessResponse(c, "Data berhasil diperbarui", nil)
@@ -135,15 +144,18 @@ func (s *PekerjaanServiceMongo) Update(c *fiber.Ctx) error {
 
 // === DELETE /api/v2/pekerjaan/:id ===
 func (s *PekerjaanServiceMongo) Delete(c *fiber.Ctx) error {
-	id := c.Params("id")
-	objID, err := primitive.ObjectIDFromHex(id)
+	id, err := c.ParamsInt("id")
 	if err != nil {
 		return helper.ErrorResponse(c, 400, "ID tidak valid")
 	}
 
-	_, err = s.Repo.Col.DeleteOne(context.TODO(), bson.M{"_id": objID})
+	result, err := s.Repo.Col.DeleteOne(context.TODO(), bson.M{"original_id": id})
 	if err != nil {
 		return helper.ErrorResponse(c, 500, "Gagal menghapus data")
+	}
+
+	if result.DeletedCount == 0 {
+		return helper.ErrorResponse(c, 404, "Data tidak ditemukan")
 	}
 
 	return helper.SuccessResponse(c, "Data berhasil dihapus", nil)
