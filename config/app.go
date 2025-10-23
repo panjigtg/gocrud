@@ -4,6 +4,8 @@ import (
 	"log"
 	"crudprojectgo/database"
 	"github.com/joho/godotenv"
+	
+	
 )
 
 func RunApp() {
@@ -12,9 +14,10 @@ func RunApp() {
 	}
 
 	db := database.KoneksiDB()
+	mongo := database.MongoConnections()
 	defer db.Close()
 
-	repos := InitRepositories(db)
+	repos := InitRepositories(db, mongo)
 	services := InitServices(repos)
 	app := SetupFiber()
 

@@ -7,3 +7,5 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY *.go ./
+
+EXPOSE 3001

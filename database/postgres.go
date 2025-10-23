@@ -27,11 +27,12 @@ func KoneksiDB() *sql.DB {
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatalf("Gagal membuka koneksi database: %v", err)
+		log.Fatalf("Can't Connect: %v", err)
 	}
 
 	if err := db.Ping(); err != nil {
-		log.Fatalf("Gagal konek ke database: %v", err)
+		log.Fatalf("Can't Connect: %v", err)
 	}
+	log.Fatalf("Succes Connect")
 	return db
 }

@@ -2,6 +2,9 @@ package config
 
 import (
 	"database/sql"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	
 	"crudprojectgo/app/repository/psql"
 	"crudprojectgo/app/services"
 )
@@ -22,7 +25,7 @@ type ServiceContainer struct {
 	Users     *services.UsersService
 }
 
-func InitRepositories(db *sql.DB) *RepositoryContainer {
+func InitRepositories(db *sql.DB,  mongo *mongo.Database) *RepositoryContainer {
 	return &RepositoryContainer{
 		Mahasiswa: psql.NewMahasiswaRepository(db),
 		Alumni:    psql.NewAlumniRepository(db),

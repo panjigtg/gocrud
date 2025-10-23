@@ -7,12 +7,13 @@ import(
 )
 
 type Users struct {
-	ID 	  int       		`json:"id"`
-	Email string    		`json:"email"`
-	Role    string    		`json:"role"`
-	Username string  		`json:"username"`
-	CreatedAt time.Time 	`json:"created_at"`
+	ID        int       `json:"id" bson:"id"`
+	Email     string    `json:"email" bson:"email"`
+	Role      string    `json:"role" bson:"role"`
+	Username  string    `json:"username" bson:"username"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
+
 
 type LoginRequest struct {
 	UsernameOrEmail    	string 	`json:"email" validate:"required,email"`
