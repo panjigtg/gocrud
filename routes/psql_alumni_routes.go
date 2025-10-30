@@ -8,7 +8,7 @@ import (
 )
 
 func AlumniRoutes(app *fiber.App, service *services.AlumniService) {
-	alumni := app.Group("/api/alumni")
+	alumni := app.Group("/api/v1/alumni")
 
 	alumni.Get("/", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), service.GetAllAlumniByFilter)
 	alumni.Get("/:id", middleware.AuthRequired(), middleware.RoleOnly("admin", "user"), service.GetAlumniByID)

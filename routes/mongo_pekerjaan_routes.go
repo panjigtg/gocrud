@@ -17,3 +17,4 @@ func PekerjaanMongoRoutes(app *fiber.App, service *services.PekerjaanServiceMong
 	r.Put("/:id", middleware.AuthRequired(), middleware.AdminOnly(), service.Update)
 	r.Delete("/:id", middleware.AuthRequired(), middleware.AdminOnly(), service.Delete)
 }
+

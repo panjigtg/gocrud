@@ -24,7 +24,7 @@ func NewPekerjaanServiceMongo(repo *mongoRepo.PekerjaanRepo) *PekerjaanServiceMo
 	}
 }
 
-// === GET /api/v2/pekerjaan ===
+
 func (s *PekerjaanServiceMongo) GetAll(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -45,7 +45,6 @@ func (s *PekerjaanServiceMongo) GetAll(c *fiber.Ctx) error {
 	return helper.SuccessResponse(c, "Data berhasil diambil", data)
 }
 
-// === GET /api/v2/pekerjaan/:id ===
 func (s *PekerjaanServiceMongo) GetByID(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -61,7 +60,6 @@ func (s *PekerjaanServiceMongo) GetByID(c *fiber.Ctx) error {
 	return helper.SuccessResponse(c, "Data berhasil diambil", data)
 }
 
-// === GET /api/v2/pekerjaan/alumni/:alumni_id ===
 func (s *PekerjaanServiceMongo) GetByAlumniID(c *fiber.Ctx) error {
 	alumniID, _ := c.ParamsInt("alumni_id")
 
@@ -81,7 +79,6 @@ func (s *PekerjaanServiceMongo) GetByAlumniID(c *fiber.Ctx) error {
 	return helper.SuccessResponse(c, "Data pekerjaan alumni berhasil diambil", data)
 }
 
-// === POST /api/v2/pekerjaan ===
 func (s *PekerjaanServiceMongo) Create(c *fiber.Ctx) error {
 	var req models.PekerjaanAlumniMongo
 	if err := c.BodyParser(&req); err != nil {
@@ -100,8 +97,6 @@ func (s *PekerjaanServiceMongo) Create(c *fiber.Ctx) error {
 	return helper.CreatedResponse(c, "Data berhasil ditambahkan", req)
 }
 
-// === PUT /api/v2/pekerjaan/:id ===
-// === PUT /api/v2/pekerjaan/:id ===
 func (s *PekerjaanServiceMongo) Update(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
@@ -142,7 +137,6 @@ func (s *PekerjaanServiceMongo) Update(c *fiber.Ctx) error {
 	return helper.SuccessResponse(c, "Data berhasil diperbarui", nil)
 }
 
-// === DELETE /api/v2/pekerjaan/:id ===
 func (s *PekerjaanServiceMongo) Delete(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {

@@ -14,9 +14,10 @@ type RepositoryContainer struct {
 	Mahasiswa      *psqlRepo.MahasiswaRepository
 	Alumni         *psqlRepo.AlumniRepository
 	Pekerjaan      *psqlRepo.PekerjaanRepository
-	PekerjaanMongo *mongoRepo.PekerjaanRepo // ✅ dari folder kamu, bukan driver
+	PekerjaanMongo *mongoRepo.PekerjaanRepo 
 	Auth           *psqlRepo.AuthRepository
 	Users          *psqlRepo.UsersRepository
+	FileRepo       *mongoRepo.FileRepo
 }
 
 type ServiceContainer struct {
@@ -26,9 +27,9 @@ type ServiceContainer struct {
 	PekerjaanMongo *services.PekerjaanServiceMongo // MongoDB version
 	Auth           *services.AuthServices
 	Users          *services.UsersService
+	FileUpload     *services.FileServiceMongo
 }
 
-// ✅ sekarang parameternya pakai mongoDriver.Database
 func InitRepositories(db *sql.DB, mongo *mongoDriver.Database) *RepositoryContainer {
 	return &RepositoryContainer{
 		Mahasiswa:      psqlRepo.NewMahasiswaRepository(db),
@@ -37,6 +38,7 @@ func InitRepositories(db *sql.DB, mongo *mongoDriver.Database) *RepositoryContai
 		PekerjaanMongo: mongoRepo.NewPekerjaanRepo(mongo), 
 		Auth:           psqlRepo.NewAuthRepository(db),
 		Users:          psqlRepo.NewUsersRepository(db),
+		FileRepo:       mongoRepo.NewFileRepository(mongo),
 	}
 }
 
@@ -48,5 +50,6 @@ func InitServices(r *RepositoryContainer) *ServiceContainer {
 		PekerjaanMongo: services.NewPekerjaanServiceMongo(r.PekerjaanMongo),
 		Auth:           services.NewAuthServices(r.Auth),
 		Users:          services.NewUsersService(r.Users),
+		FileUpload:     services.NewFileServiceMongo(r.FileRepo),
 	}
 }
