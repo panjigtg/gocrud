@@ -1,0 +1,270 @@
+basePath: /
+definitions:
+  helper.Response:
+    properties:
+      data: {}
+      error:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  models.ErrorPayload:
+    properties:
+      error:
+        example: internal server error
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  models.FilterUsers:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+  models.LoginRequest:
+    properties:
+      1_username_or_email:
+        example: panji@example.com
+        type: string
+      2_password:
+        example: xafasfa122
+        minLength: 8
+        type: string
+    required:
+    - 1_username_or_email
+    - 2_password
+    type: object
+  models.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.Users'
+    type: object
+  models.MetaInfo:
+    properties:
+      limit:
+        type: integer
+      order:
+        type: string
+      page:
+        type: integer
+      pages:
+        type: integer
+      search:
+        type: string
+      sortBy:
+        type: string
+      total:
+        type: integer
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  models.UserResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.FilterUsers'
+        type: array
+      meta:
+        $ref: '#/definitions/models.MetaInfo'
+    type: object
+  models.Users:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  models.UsersListOK:
+    properties:
+      data:
+        $ref: '#/definitions/models.UserResponse'
+      message:
+        example: succes
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+host: 127.0.0.1:3000
+info:
+  contact: {}
+  description: API documentation for CRUD Project Go
+  title: CRUD Project Go API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      description: Authenticate user and return access token
+      parameters:
+      - description: Login payload
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.LoginResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Login user
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Logout user (JWT akan dianggap tidak berlaku)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.Response'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Membuat user baru
+      parameters:
+      - description: Register payload
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/helper.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Users'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/helper.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helper.Response'
+      summary: Register user baru
+      tags:
+      - Auth
+  /users/:
+    get:
+      consumes:
+      - application/json
+      description: Mengambil seluruh data user dari database dengan pagination, sorting,
+        dan pencarian
+      parameters:
+      - description: Nomor halaman (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Jumlah data per halaman (default 10)
+        in: query
+        name: limit
+        type: integer
+      - description: Kolom pengurutan
+        enum:
+        - id
+        - name
+        - email
+        - created_at
+        in: query
+        name: sortBy
+        type: string
+      - description: Arah pengurutan
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - description: Kata kunci pencarian
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UsersListOK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorPayload'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorPayload'
+      summary: Dapatkan semua user
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

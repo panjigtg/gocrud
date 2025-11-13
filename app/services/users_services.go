@@ -19,6 +19,21 @@ func NewUsersService(repo *psql.UsersRepository) *UsersService {
 	return &UsersService{repo: repo}
 }
 
+// HandleGetAllUsers godoc
+// @Summary Dapatkan semua user
+// @Description Mengambil seluruh data user dari database dengan pagination, sorting, dan pencarian
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param page query int false "Nomor halaman (default 1)"
+// @Param limit query int false "Jumlah data per halaman (default 10)"
+// @Param sortBy query string false "Kolom pengurutan" Enums(id,name,email,created_at)
+// @Param order query string false "Arah pengurutan" Enums(asc,desc)
+// @Param search query string false "Kata kunci pencarian"
+// @Success 200 {object} models.UsersListOK
+// @Failure 400 {object} models.ErrorPayload
+// @Failure 500 {object} models.ErrorPayload
+// @Router /users/ [get]
 func (s *UsersService) GetUsers(c *fiber.Ctx) error {
 	page, _ := strconv.Atoi(c.Query("page", "1"))
 	limit, _ := strconv.Atoi(c.Query("limit", "10"))

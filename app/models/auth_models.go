@@ -16,8 +16,8 @@ type Users struct {
 
 
 type LoginRequest struct {
-	UsernameOrEmail    	string 	`json:"email" validate:"required,email"`
-	Password 			string 	`json:"password" validate:"required,min=8"`
+	UsernameOrEmail    	string 	`json:"1_username_or_email" validate:"required,email" example:"panji@example.com"`
+	Password 			string 	`json:"2_password" validate:"required,min=8" example:"xafasfa122"`
 }
 
 type LoginResponse struct {

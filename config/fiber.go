@@ -6,6 +6,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/swagger"
+	_ "crudprojectgo/docs"
 )
 
 func SetupFiber() *fiber.App {
@@ -28,6 +30,9 @@ func SetupFiber() *fiber.App {
 			"version": "1.0.0",
 		})
 	})
+
+	// Swagger UI route
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	return app
 }

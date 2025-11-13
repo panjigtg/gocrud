@@ -19,9 +19,17 @@ func NewAuthServices(repo *psql.AuthRepository) *AuthServices {
 	return &AuthServices{repo: repo}
 }
 
-// --------------------
-// LOGIN
-// --------------------
+// Login godoc
+// @Summary Login user
+// @Description Authenticate user and return access token
+// @Tags Auth
+// @Produce json
+// @Param login body models.LoginRequest true "Login payload"
+// @Success 200 {object} helper.Response{data=models.LoginResponse}
+// @Failure 400 {object} helper.Response
+// @Failure 401 {object} helper.Response
+// @Failure 500 {object} helper.Response
+// @Router /auth/login [post]
 func (s *AuthServices) Login(c *fiber.Ctx) error {
 	var req models.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -51,9 +59,17 @@ func (s *AuthServices) Login(c *fiber.Ctx) error {
 	})
 }
 
-// --------------------
-// REGISTER
-// --------------------
+// Register godoc
+// @Summary Register user baru
+// @Description Membuat user baru
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param register body models.RegisterRequest true "Register payload"
+// @Success 201 {object} helper.Response{data=models.Users}
+// @Failure 400 {object} helper.Response
+// @Failure 500 {object} helper.Response
+// @Router /auth/register [post]
 func (s *AuthServices) Register(c *fiber.Ctx) error {
 	var req models.RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -83,9 +99,15 @@ func (s *AuthServices) Register(c *fiber.Ctx) error {
 	return helper.CreatedResponse(c, "Akun berhasil dibuat", newUser)
 }
 
-// --------------------
-// LOGOUT
-// --------------------
+// Logout godoc
+// @Summary Logout user
+// @Description Logout user (JWT akan dianggap tidak berlaku)
+// @Tags Auth
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} helper.Response
+// @Failure 400 {object} helper.Response
+// @Router /auth/logout [post]
 func (s *AuthServices) Logout(c *fiber.Ctx) error {
 	// Untuk JWT stateless, logout = hapus token di sisi client.
 	// Tapi kalau kamu pakai token blacklist, bisa disimpan ke DB atau Redis di sini.
